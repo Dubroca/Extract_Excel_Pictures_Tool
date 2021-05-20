@@ -1,6 +1,6 @@
 <?php
 
-//Verification that the user has chosen a csv file format
+//Verification that the user has chosen a csv file format and sent an Excel file
 if(isset($_POST['csvformat']) && !empty($_POST['csvformat']) && file_exists($_FILES['mon_fichier']['tmp_name']) || is_uploaded_file($_FILES['files']['tmp_name']))
 {
 
@@ -8,7 +8,7 @@ if(isset($_POST['csvformat']) && !empty($_POST['csvformat']) && file_exists($_FI
 $delimiterpost = $_POST['csvformat'];
 
 //Uploaded xlsx file recovery
-$xlsx="C:/it/xlsx_files/".date('Y_m_d H-i-s')."_file.xlsx";
+$xlsx="//Alcyons/it/PhotoShoot/andromeda/xlsx_files/".date('Y_m_d H-i-s')."_file.xlsx";
 move_uploaded_file($_FILES["mon_fichier"]["tmp_name"],$xlsx);
 
 require_once 'PHPExcel/Classes/PHPExcel/IOFactory.php';
@@ -20,7 +20,7 @@ $objPHPExcel = PHPExcel_IOFactory::load($xlsx);
 
 //Unique name folder for the pictures
 $dirname = uniqid();
-mkdir("C:/it/pictures_folders/$dirname/");
+mkdir("//Alcyons/it/PhotoShoot/andromeda/pictures_folders/$dirname/");
 
 //Reading the xlsx file
 $sheet = $objPHPExcel->getActiveSheet();
@@ -35,6 +35,7 @@ foreach ($sheet->getDrawingCollection() as $drawing ) {
         );
         $imageContents = ob_get_contents();
         ob_end_clean();
+        //Extract pictures
         switch ($drawing->getMimeType()) {
             case PHPExcel_Worksheet_MemoryDrawing::MIMETYPE_PNG:
                 $extension = 'png'; break;
@@ -51,7 +52,7 @@ foreach ($sheet->getDrawingCollection() as $drawing ) {
         }
         fclose($zipReader);
         $extension = $drawing->getExtension();     
-        $chemin = "C:/it/pictures_folders/$dirname/";  
+        $chemin = "//Alcyons/it/PhotoShoot/andromeda/pictures_folders/$dirname/";  
     }    
     
     //Retrieving cell values for the images name
@@ -85,7 +86,7 @@ foreach($sheet->getMergeCells() as $range) {
 
 //Create the new xlsx unmerged file
 $objWriter = new PHPExcel_Writer_Excel2007($objPHPExcel); 
-$unmerged="C/it/unmerged_files/".date('Y_m_d H-i-s')."_file.xlsx";
+$unmerged="//Alcyons/it/PhotoShoot/andromeda/unmerged_files/".date('Y_m_d H-i-s')."_file.xlsx";
 $objWriter->save($unmerged);
 
                             
@@ -94,7 +95,7 @@ $excel = PHPExcel_IOFactory::load($unmerged);
 $writer = PHPExcel_IOFactory::createWriter($excel, 'CSV');
 $writer->setDelimiter($delimiterpost);
 $writer->setEnclosure('"');
-$nomcsv = "C/it/csv/".date('Ymd_His').".csv";
+$nomcsv = "//Alcyons/it/PhotoShoot/andromeda/csv/".date('Ymd_His').".csv";
 $writer->save($nomcsv);
 
 
@@ -140,6 +141,7 @@ if (($handle = fopen($nomcsv, 'r')) !== FALSE) {
                $indice_fin_tableau= count($data);
                $data[count($data)]='PICT';
                $data[count($data)]='COLOR_DESCRIPTION';
+            //    $data[3] = 'DESCRIPTION_NEW';
 
                for ( $i=1; $i<=10; $i++ ){
                     $data[count($data)+$i-1]="PICTO$i";
@@ -148,22 +150,26 @@ if (($handle = fopen($nomcsv, 'r')) !== FALSE) {
         else
         {
             //Add columns at the end
-            $data[$indice_fin_tableau] = (!empty($data[4]) ? ($data[7] ?: '') . "_" . $data[4] . '.jpg' : ' '); 
+            $data[$indice_fin_tableau] = (!empty($data[4]) ? ($data[7] ?: '') . "_" . $data[4] . '-1.jpg' : ' '); 
             $data[$indice_fin_tableau+1] = (!empty($data[3]) ? (ltrim($data[4], '0') ?: '') . "-" . $data[3] : ' ');  
     			
     		//Using the function for CATALOG INDICATORS
             $out = multiSplit($data[23]);
-    		
-    		$data[$indice_fin_tableau+2] = $out[0];
-    		$data[$indice_fin_tableau+3] = $out[1];	
-    		$data[$indice_fin_tableau+4] = $out[2];  
-    		$data[$indice_fin_tableau+5] = $out[3];  
-    		$data[$indice_fin_tableau+6] = $out[4]; 
-    		$data[$indice_fin_tableau+7] = $out[5]; 
-    		$data[$indice_fin_tableau+8] = $out[6];  
-    		$data[$indice_fin_tableau+9] = $out[7];
-    		$data[$indice_fin_tableau+10] = $out[8]; 
-    		$data[$indice_fin_tableau+11] = $out[9];
+
+            for($i = 2; $i < 12; $i++) {
+
+                $data[$indice_fin_tableau+$i] = trim($out[$i-2]);
+            }
+    
+    		// Query
+    		// $query = "SELECT ACTIVE_SIZES FROM ADA_ACTIVE_SIZE2_VIEW WHERE ADA_STYLE = '".$data[7]."'";
+    		// $result = odbc_exec($connect, $query);
+    
+    
+    		   // while($final = odbc_fetch_array($result)) {
+    				
+    				// $data['Sizes'] =  $final['ACTIVE_SIZES']; 				 
+    		   // }
     
              //Modifications of the column Style Feature Cats Comments
                if ($data[22])			 
@@ -197,7 +203,7 @@ if (($handle = fopen($nomcsv, 'w')) !== FALSE) {
 }
      
 // Put the xlsx file in a zip folder
-$solidpepper_path = "C:/it/pictures_folders/$dirname/solidpepper_file.csv";
+$solidpepper_path = "//Alcyons/it/PhotoShoot/andromeda/pictures_folders/$dirname/solidpepper_file.csv";
 
 if (!copy($nomcsv, $solidpepper_path)) {
     echo "The copy of the file $nomcsv failed...\n";
@@ -207,7 +213,7 @@ if (!copy($nomcsv, $solidpepper_path)) {
 $dirzip = date('Ymd His')."_andromeda";
 
 //Zip creation        
-$nomzip = "C:/zip/$dirzip.zip"; 
+$nomzip = "//Alcyons/it/PhotoShoot/andromeda/zip/$dirzip.zip"; 
 $zip = new ZipArchive;
 if($zip -> open($nomzip, ZipArchive::CREATE ) === TRUE)
 { 
